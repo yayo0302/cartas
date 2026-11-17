@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Ti ✨ | Buzón de Cartas</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Cormorant Garamond (elegante), Plus Jakarta Sans (limpia) y Caveat (escritura a mano) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cream: '#FAF6F0',
+                        parchment: '#F3ECE1',
+                        rosewarm: '#D46A73',
+                        rosedeep: '#B54B54',
+                        rosepale: '#F9E8E9',
+                        goldwarm: '#C89D54',
+                        ink: '#2D2A32',
+                        inklight: '#6E6875'
+                    },
+                    fontFamily: {
+                        serif: ['"Cormorant Garamond"', 'serif'],
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        hand: ['"Caveat"', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #FAF6F0;
+            color: #2D2A32;
+            overflow-x: hidden;
+        }
+
+        /* Textura sutil de papel y fondo cálido */
+        .bg-romantic-pattern {
+            background-color: #FAF6F0;
+            background-image: 
+                radial-gradient(at 15% 15%, rgba(212, 106, 115, 0.09) 0px, transparent 50%),
+                radial-gradient(at 85% 80%, rgba(200, 157, 84, 0.1) 0px, transparent 50%),
+                radial-gradient(#D46A73 0.45px, transparent 0.45px);
+            background-size: 100% 100%, 100% 100%, 28px 28px;
+        }
+
+        /* Estilo de hoja de carta real */
+        .paper-sheet {
+            background-color: #FFFDF9;
+            background-image: linear-gradient(transparent 96%, rgba(212, 106, 115, 0.12) 97%);
+            background-size: 100% 2.2rem;
+            box-shadow: 
+                0 20px 50px rgba(45, 42, 50, 0.18),
+                0 0 0 1px rgba(200, 157, 84, 0.25);
+        }
+
+        /* Efecto de sobre en las tarjetas */
+        .envelope-card {
+            transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .envelope-card:hover:not(.locked-card) {
+            transform: translateY(-6px);
+            box-shadow: 0 18px 35px -10px rgba(181, 75, 84, 0.2);
+        }
+
+        /* Solapa superior del sobre decorativa */
+        .envelope-flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 68px;
+            background: linear-gradient(180deg, rgba(243, 236, 225, 0.95) 0%, rgba(243, 236, 225, 0.4) 100%);
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+            border-bottom: 1px solid rgba(200, 157, 84, 0.3);
+            transition: transform 0.4s ease;
+            transform-origin: top;
+            pointer-events: none;
+        }
+        .envelope-card:hover:not(.locked-card) .envelope-flap {
+            transform: scaleY(0.82);
+        }
+
+        /* Sello de cera */
+        .wax-seal {
+            box-shadow: 
+                inset 0 2px 4px rgba(255,255,255,0.35),
+                inset 0 -3px 5px rgba(0,0,0,0.25),
+                0 4px 10px rgba(181, 75, 84, 0.35);
+            transition: transform 0.3s ease;
+        }
+        .envelope-card:hover:not(.locked-card) .wax-seal {
+            transform: scale(1.08) rotate(6deg);
+        }
+
+        /* Animaciones suaves */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+        .animate-float {
+            animation: floatSlow 5s ease-in-out infinite;
+        }
+
+        @keyframes pulseSoft {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
+        .animate-pulse-soft {
+            animation: pulseSoft 3s ease-in-out infinite;
+        }
+
+        /* Scrollbar delicado */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FAF6F0;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E2D5C4;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #D46A73;
+        }
+    </style>
+</head>
+<body class="bg-romantic-pattern font-sans min-h-screen selection:bg-rosepale selection:text-rosedeep relative">
+
+    <!-- Canvas de partículas flotantes (corazones y destellos sutiles) -->
+    <canvas id="particles-canvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+    <!-- =====================================================================
+         1. PANTALLA DE BIENVENIDA (WELCOME OVERLAY)
+    ====================================================================== -->
+    <section id="welcome-screen" class="fixed inset-0 z-40 flex flex-col items-center justify-center px-6 py-12 bg-romantic-pattern transition-all duration-700 ease-in-out">
+        
+        <div class="max-w-lg w-full text-center relative">
+            <!-- Ilustración SVG de Sobre con Corazón Flotante -->
+            <div class="mb-8 inline-flex items-center justify-center relative animate-float">
+                <div class="w-24 h-24 rounded-full bg-rosepale/80 flex items-center justify-center shadow-inner border border-rosewarm/20">
+                    <svg class="w-12 h-12 text-rosewarm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                    </svg>
+                </div>
+                <!-- Pequeño corazón decorativo -->
+                <span class="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-rosewarm text-white flex items-center justify-center shadow-md animate-pulse-soft">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                </span>
+            </div>
+
+            <!-- Subtítulo superior -->
+            <p id="welcome-badge" class="text-xs uppercase tracking-[0.25em] text-goldwarm font-semibold mb-3">
+                Un rincón especial para ti
+            </p>
+
+            <!-- Título principal -->
+            <h1 id="welcome-title" class="font-serif text-4xl sm:text-5xl md:text-6xl font-bold text-ink leading-tight mb-5">
+                Hola, <span class="text-rosewarm italic">bonita</span> ✨
+            </h1>
+
+            <!-- Mensaje de introducción -->
+            <p id="welcome-subtitle" class="text-base sm:text-lg text-inklight leading-relaxed mb-9 max-w-md mx-auto">
+                Hice este pequeño espacio para ir guardando cartas, pensamientos y momentos que me hacen sonreír desde que te estoy conociendo.
+            </p>
+
+            <!-- Botón para entrar al buzón -->
+            <button id="btn-enter" onclick="abrirBuzon()" class="group relative inline-flex items-center gap-3 bg-rosewarm hover:bg-rosedeep text-white font-medium px-8 py-4 rounded-full shadow-lg shadow-rosewarm/30 transition-all duration-300 hover:scale-105 active:scale-95">
+                <span>Abrir buzón de cartas</span>
+                <svg class="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                </svg>
+            </button>
+
+        </div>
+    </section>
+
+    <!-- =====================================================================
+         2. VISTA PRINCIPAL: GALERÍA DE CARTAS
+    ====================================================================== -->
+    <div id="main-content" class="relative z-10 min-h-screen flex flex-col opacity-0 pointer-events-none transition-opacity duration-700">
+        
+        <!-- Encabezado Superior -->
+        <header class="w-full max-w-6xl mx-auto px-4 sm:px-8 pt-8 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-goldwarm/20">
+            <div class="flex items-center gap-3">
+                <button onclick="volverABienvenida()" title="Volver a la portada" class="w-10 h-10 rounded-full bg-white/80 hover:bg-rosepale border border-goldwarm/25 flex items-center justify-center text-rosewarm transition shadow-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <div>
+                    <h2 id="header-title" class="font-serif text-2xl sm:text-3xl font-bold text-ink">
+                        Buzón de Cartas
+                    </h2>
+                    <p class="text-xs sm:text-sm text-inklight">
+                        Haz clic en cualquier sobre para leer la carta completa
+                    </p>
+                </div>
+            </div>
+
+            <!-- Contador y Filtros -->
+            <div class="flex flex-wrap items-center gap-2">
+                <span id="counter-badge" class="text-xs font-medium bg-parchment text-inklight px-3.5 py-1.5 rounded-full border border-goldwarm/20">
+                    Cargando cartas...
+                </span>
+                <div class="flex bg-white/70 p-1 rounded-full border border-goldwarm/20 text-xs">
+                    <button onclick="filtrarCartas('todas')" id="filter-todas" class="px-3 py-1 rounded-full font-medium bg-rosewarm text-white transition">
+                        Todas
+                    </button>
+                    <button onclick="filtrarCartas('nuevas')" id="filter-nuevas" class="px-3 py-1 rounded-full font-medium text-inklight hover:text-ink transition">
+                        Por leer
+                    </button>
+                    <button onclick="filtrarCartas('favoritas')" id="filter-favoritas" class="px-3 py-1 rounded-full font-medium text-inklight hover:text-ink transition flex items-center gap-1">
+                        <span>♥</span> Favoritas
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mensaje destacado o cita -->
+        <div class="w-full max-w-6xl mx-auto px-4 sm:px-8 mt-6">
+            <div class="bg-white/70 backdrop-blur-sm border border-goldwarm/25 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                <button onclick="abrirCartaAleatoria()" class="text-xs font-medium text-rosewarm hover:text-rosedeep bg-rosepale/60 hover:bg-rosepale px-3.5 py-2 rounded-xl transition shrink-0 self-end sm:self-auto">
+                    Sorpréndeme con una carta →
+                </button>
+            </div>
+        </div>
+
+        <!-- Cuadrícula de Cartas (Grid) -->
+        <main class="w-full max-w-6xl mx-auto px-4 sm:px-8 py-8 flex-1">
+            <div id="letters-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Las tarjetas se renderizan dinámicamente desde JavaScript -->
+            </div>
+
+            <!-- Estado vacío cuando un filtro no tiene resultados -->
+            <div id="empty-state" class="hidden text-center py-16">
+                <p class="font-serif text-2xl text-ink mb-2">No hay cartas en esta sección todavía</p>
+                <p class="text-sm text-inklight mb-4">Prueba viendo todas las cartas disponibles en el buzón.</p>
+                <button onclick="filtrarCartas('todas')" class="text-xs font-medium bg-rosewarm text-white px-4 py-2 rounded-full">
+                    Ver todas las cartas
+                </button>
+            </div>
+        </main>
+
+        <!-- Pie de página con acceso discreto al Modo Creador para ti -->
+        <footer class="w-full max-w-6xl mx-auto px-4 sm:px-8 py-8 border-t border-goldwarm/15 text-center flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-inklight">
+            <!-- Botón discreto para que tú puedas redactar y generar el código de nuevas cartas -->
+            <button onclick="abrirModalCreador()">
+                <!--<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>-->
+                <span></span>
+            </button>
+        </footer>
+    </div>
+
+    <!-- =====================================================================
+         3. MODAL DE LECTURA DE CARTA (HOJA DE PAPEL)
+    ====================================================================== -->
+    <div id="letter-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6 bg-ink/50 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div id="letter-modal-box" class="paper-sheet w-full max-w-2xl rounded-3xl p-6 sm:p-10 md:p-12 relative max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300">
+            
+            <!-- Barra superior del modal -->
+            <div class="flex items-center justify-between pb-4 mb-6 border-b border-goldwarm/25">
+                <div class="flex items-center gap-2">
+                    <span id="modal-tag" class="text-xs uppercase tracking-widest font-semibold px-3 py-1 rounded-full bg-rosepale text-rosedeep">
+                        Carta #1
+                    </span>
+                    <span id="modal-date" class="text-xs text-inklight">
+                        Fecha
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <!-- Botón de guardar en favoritas -->
+                    <button id="modal-fav-btn" onclick="toggleFavoritaActual()" title="Guardar como favorita" class="w-9 h-9 rounded-full bg-cream hover:bg-rosepale flex items-center justify-center text-inklight hover:text-rosewarm transition">
+                        <svg id="modal-fav-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                    </button>
+                    <!-- Botón cerrar -->
+                    <button onclick="cerrarModalCarta()" class="w-9 h-9 rounded-full bg-cream hover:bg-rosepale flex items-center justify-center text-inklight hover:text-ink transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Título de la carta -->
+            <h3 id="modal-title" class="font-serif text-3xl sm:text-4xl font-bold text-ink mb-6 leading-snug">
+                Título de la carta
+            </h3>
+
+            <!-- Cuerpo de la carta -->
+            <div id="modal-body" class="text-base sm:text-lg text-ink/90 leading-relaxed space-y-4 font-serif">
+                <!-- Párrafos insertados dinámicamente -->
+            </div>
+
+            <!-- Postdata (opcional) -->
+            <div id="modal-ps-container" class="mt-6 pt-4 border-t border-dashed border-goldwarm/30 hidden">
+                <p id="modal-ps" class="text-sm italic text-inklight"></p>
+            </div>
+
+            <!-- Firma al final de la carta -->
+            <div class="mt-10 pt-4 flex flex-col items-end">
+                <p class="text-xs uppercase tracking-widest text-inklight mb-1">Con cariño,</p>
+                <p id="modal-signature" class="font-hand text-3xl text-rosewarm">
+                    Tu firma
+                </p>
+            </div>
+
+            <!-- Navegación entre cartas (Anterior / Siguiente) -->
+            <div class="mt-8 pt-4 border-t border-goldwarm/20 flex items-center justify-between text-xs text-inklight">
+                <button id="btn-prev-letter" onclick="navegarCarta(-1)" class="hover:text-rosewarm flex items-center gap-1 transition disabled:opacity-30 disabled:pointer-events-none">
+                    <span>← Carta anterior</span>
+                </button>
+                <button onclick="cerrarModalCarta()" class="text-rosewarm font-medium hover:underline">
+                    Volver al buzón
+                </button>
+                <button id="btn-next-letter" onclick="navegarCarta(1)" class="hover:text-rosewarm flex items-center gap-1 transition disabled:opacity-30 disabled:pointer-events-none">
+                    <span>Siguiente carta →</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         4. MODAL MODO CREADOR (PARA QUE TÚ AGREGUES CARTAS FÁCILMENTE)
+    ====================================================================== -->
+    <div id="creator-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6 bg-ink/60 backdrop-blur-sm">
+        <div class="bg-cream w-full max-w-2xl rounded-3xl p-6 sm:p-8 border border-goldwarm/30 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 mb-5 border-b border-goldwarm/20">
+                <div>
+                    <h3 class="font-serif text-2xl font-bold text-ink">Nuevas Cartas</h3>
+                   
+                </div>
+                <button onclick="cerrarModalCreador()" class="w-8 h-8 rounded-full bg-parchment hover:bg-rosepale flex items-center justify-center text-ink">
+                    ✕
+                </button>
+            </div>
+
+            <form id="creator-form" onsubmit="guardarNuevaCarta(event)" class="space-y-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-inklight mb-1">Título de la carta *</label>
+                        <input type="text" id="new-title" required placeholder="Ej: Lo que pensé hoy de ti" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-goldwarm/30 focus:outline-none focus:border-rosewarm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-inklight mb-1">Etiqueta / Número *</label>
+                        <input type="text" id="new-tag" required placeholder="Ej: Carta #5 • Un recuerdo" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-goldwarm/30 focus:outline-none focus:border-rosewarm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-inklight mb-1">Fecha que se mostrará *</label>
+                        <input type="text" id="new-date" required placeholder="Ej: 20 de Noviembre, 2026" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-goldwarm/30 focus:outline-none focus:border-rosewarm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-inklight mb-1">Firma al final</label>
+                        <input type="text" id="new-signature" placeholder="Ej: Alguien que piensa mucho en ti" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-goldwarm/30 focus:outline-none focus:border-rosewarm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-inklight mb-1">Mensaje de la carta * (Separa párrafos con Enter)</label>
+                    <textarea id="new-content" rows="5" required placeholder="Escribe aquí todo lo que quieras decirle..." class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-goldwarm/30 focus:outline-none focus:border-rosewarm"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-inklight mb-1">Postdata (P.D. Opcional)</label>
+                        <input type="text" id="new-ps" placeholder="Ej: P.D. Me encanta cuando sonríes." class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-goldwarm/30 focus:outline-none focus:border-rosewarm">
+                    </div>
+                    <div class="flex items-center pt-5">
+                        <label class="inline-flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="new-locked" class="w-4 h-4 accent-rosewarm rounded">
+                            <span class="text-xs text-ink">Mostrar como "Bloqueada / Próximamente"</span>
+                        </label>
+                    </div>
+                </div>
+            </form>
+
+            
+        </div>
+    </div>
+
+    <!-- Notificación flotante (Toast) -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 hidden bg-ink text-white text-xs px-4 py-3 rounded-xl shadow-lg flex items-center gap-2">
+        <span id="toast-text">Mensaje</span>
+    </div>
+
+    <!-- =====================================================================
+         5. JAVASCRIPT: CONFIGURACIÓN Y LISTA DE CARTAS (FÁCIL DE EDITAR)
+    ====================================================================== -->
+    <script>
+        /* ===================================================================
+           🎯 ZONA DE PERSONALIZACIÓN RÁPIDA
+           Aquí puedes cambiar el nombre de ella, tu firma y tus cartas.
+           Para agregar una carta nueva en el futuro, solo copia uno de los
+           bloques { ... } dentro de CARTAS y pégalo al final.
+        =================================================================== */
+        const CONFIG = {
+            nombreDeElla: "bonita", // Puedes poner su nombre aquí, ej: "Sofía" o dejar "bonita"
+            subtituloBienvenida: "Hice este pequeño espacio para ir guardando cartas, pensamientos y momentos que me hacen sonreír desde que te estoy conociendo.",
+            firmaPorDefecto: "Alguien a quien le encantas ✨"
+        };
+
+        const CARTAS = [
+            {
+                id: "carta-1",
+                etiqueta: "Carta #1 ",
+                titulo: "Rutina",
+                fecha: "16 de noviembre",
+                bloqueada: false,
+                contenido: [
+                    "De entre todas las cosas que espero, el contar los días para verte, se ha convertido en mi rutina favorita.",
+                    "Quise crearte esta página para tener un lugar donde las palabras se queden guardadas con calma.",
+                    "Este buzón es tuyo. Cada vez que quiera contarte algo especial, compartirte un recuerdo o simplemente recordarte lo increíble que eres, aparecerá un sobre nuevo aquí para ti."
+                ],
+                postdata: "P.D. Gracias por llegar y tener el tiempo de conocernos.",
+                firma: "Yahir"
+            },
+            {
+                id: "carta-2",
+                etiqueta: "Carta #2 • Próximamente",
+                titulo: "???",
+                fecha: "Se desbloqueará pronto",
+                bloqueada: true,
+                mensajeBloqueo: "Escribiendo aún...",
+                contenido: [
+                    "Aquí escribiré lo que más me gustó de nuestra próxima salida juntos."
+                ],
+                postdata: "",
+                firma: ""
+            },
+        ];
+
+        /* ===================================================================
+           LÓGICA DE LA APLICACIÓN
+        =================================================================== */
+        let filtroActual = 'todas';
+        let cartaAbiertaId = null;
+
+        // Estado persistente en el navegador (cartas leídas, favoritas y borradores locales)
+        let cartasLeidas = JSON.parse(localStorage.getItem('buzon_leidas') || '[]');
+        let cartasFavoritas = JSON.parse(localStorage.getItem('buzon_favoritas') || '[]');
+        let cartasExtraLocal = JSON.parse(localStorage.getItem('buzon_extra_cartas') || '[]');
+
+        function obtenerTodasLasCartas() {
+            return [...CARTAS, ...cartasExtraLocal];
+        }
+
+        // Inicialización al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            // Aplicar textos personalizados
+            document.getElementById('welcome-title').innerHTML = `Hola, <span class="text-rosewarm italic">${CONFIG.nombreDeElla}</span> ✨`;
+            document.getElementById('welcome-subtitle').textContent = CONFIG.subtituloBienvenida;
+
+            iniciarParticulas();
+            renderizarCartas();
+
+            // Cerrar modales con tecla Escape
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    cerrarModalCarta();
+                    cerrarModalCreador();
+                }
+            });
+        });
+
+        // Transición de la pantalla de bienvenida al buzón
+        function abrirBuzon() {
+            const welcome = document.getElementById('welcome-screen');
+            const main = document.getElementById('main-content');
+
+            welcome.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+            setTimeout(() => {
+                welcome.classList.add('hidden');
+                main.classList.remove('opacity-0', 'pointer-events-none');
+            }, 500);
+        }
+
+        function volverABienvenida() {
+            const welcome = document.getElementById('welcome-screen');
+            const main = document.getElementById('main-content');
+
+            main.classList.add('opacity-0', 'pointer-events-none');
+            welcome.classList.remove('hidden');
+            setTimeout(() => {
+                welcome.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+            }, 50);
+        }
+
+        // Renderizado de la galería de sobres/cartas
+        function renderizarCartas() {
+            const grid = document.getElementById('letters-grid');
+            const emptyState = document.getElementById('empty-state');
+            const todas = obtenerTodasLasCartas();
+
+            // Actualizar contador de cartas desbloqueadas
+            const desbloqueadas = todas.filter(c => !c.bloqueada).length;
+            const leidasCount = todas.filter(c => !c.bloqueada && cartasLeidas.includes(c.id)).length;
+            document.getElementById('counter-badge').textContent = `${leidasCount} de ${desbloqueadas} cartas leídas`;
+
+            // Filtrar según selección
+            const filtradas = todas.filter(carta => {
+                if (filtroActual === 'nuevas') return !carta.bloqueada && !cartasLeidas.includes(carta.id);
+                if (filtroActual === 'favoritas') return cartasFavoritas.includes(carta.id);
+                return true;
+            });
+
+            grid.innerHTML = '';
+
+            if (filtradas.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            filtradas.forEach((carta, index) => {
+                const esLeida = cartasLeidas.includes(carta.id);
+                const esFavorita = cartasFavoritas.includes(carta.id);
+
+                const card = document.createElement('article');
+                
+                if (carta.bloqueada) {
+                    // Tarjeta de carta bloqueada / próximamente
+                    card.className = "envelope-card locked-card bg-parchment/60 border border-dashed border-goldwarm/40 rounded-3xl p-6 pt-14 flex flex-col justify-between min-h-[240px] select-none cursor-pointer opacity-80 hover:opacity-95";
+                    card.onclick = () => mostrarToast(carta.mensajeBloqueo || "Esta carta se desbloqueará muy pronto ✨");
+                    card.innerHTML = `
+                        <div class="envelope-flap opacity-50"></div>
+                        <div class="relative z-10 flex items-center justify-between mb-3">
+                            <span class="text-[11px] uppercase tracking-wider font-semibold text-inklight bg-white/60 px-2.5 py-1 rounded-full">
+                                ${carta.etiqueta}
+                            </span>
+                            <span class="text-xs font-medium text-goldwarm flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                                Próximamente
+                            </span>
+                        </div>
+                        <div class="relative z-10 my-auto py-3 text-center">
+                            <div class="w-11 h-11 mx-auto mb-3 rounded-full bg-goldwarm/15 border border-goldwarm/30 flex items-center justify-center text-goldwarm">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-serif text-xl font-semibold text-ink/75 mb-1">${carta.titulo}</h3>
+                            <p class="text-xs text-inklight italic">${carta.mensajeBloqueo || 'Guardada para un próximo momento...'}</p>
+                        </div>
+                        <div class="relative z-10 pt-3 border-t border-goldwarm/15 flex items-center justify-between text-xs text-inklight/70">
+                            <span>${carta.fecha}</span>
+                            <span>Sobre sellado</span>
+                        </div>
+                    `;
+                } else {
+                    // Tarjeta de carta disponible para abrir
+                    const extracto = Array.isArray(carta.contenido) ? carta.contenido[0] : carta.contenido;
+                    card.className = "envelope-card bg-white/90 backdrop-blur-sm border border-goldwarm/25 rounded-3xl p-6 pt-14 flex flex-col justify-between min-h-[240px] cursor-pointer shadow-sm";
+                    card.onclick = () => abrirModalCarta(carta.id);
+
+                    card.innerHTML = `
+                        <div class="envelope-flap"></div>
+                        
+                        <!-- Sello central en la punta del sobre -->
+                        <div class="wax-seal w-9 h-9 rounded-full bg-rosewarm text-white flex items-center justify-center absolute top-8 left-1/2 -translate-x-1/2 z-10">
+                            <span class="text-xs">♥</span>
+                        </div>
+
+                        <div class="relative z-10 flex items-center justify-between mb-3 mt-2">
+                            <span class="text-[11px] uppercase tracking-wider font-semibold text-rosedeep bg-rosepale/80 px-2.5 py-1 rounded-full">
+                                ${carta.etiqueta}
+                            </span>
+                            <div class="flex items-center gap-1.5">
+                                ${esFavorita ? `<span class="text-rosewarm text-sm" title="Favorita">♥</span>` : ''}
+                                ${esLeida 
+                                    ? `<span class="text-[11px] font-medium text-inklight bg-parchment px-2.5 py-0.5 rounded-full">Leída</span>` 
+                                    : `<span class="text-[11px] font-semibold text-white bg-rosewarm px-2.5 py-0.5 rounded-full animate-pulse">Nueva ✨</span>`
+                                }
+                            </div>
+                        </div>
+
+                        <div class="relative z-10 my-2">
+                            <h3 class="font-serif text-2xl font-bold text-ink group-hover:text-rosewarm transition mb-2 leading-snug">
+                                ${carta.titulo}
+                            </h3>
+                            <p class="text-xs text-inklight line-clamp-2 leading-relaxed">
+                                "${extracto}"
+                            </p>
+                        </div>
+
+                        <div class="relative z-10 pt-3 mt-3 border-t border-goldwarm/15 flex items-center justify-between text-xs">
+                            <span class="text-inklight">${carta.fecha}</span>
+                            <span class="font-medium text-rosewarm inline-flex items-center gap-1">
+                                Abrir carta 
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </span>
+                        </div>
+                    `;
+                }
+
+                grid.appendChild(card);
+            });
+        }
+
+        // Cambiar filtro activo
+        function filtrarCartas(nuevoFiltro) {
+            filtroActual = nuevoFiltro;
+            ['todas', 'nuevas', 'favoritas'].forEach(f => {
+                const btn = document.getElementById(`filter-${f}`);
+                if (f === nuevoFiltro) {
+                    btn.className = "px-3 py-1 rounded-full font-medium bg-rosewarm text-white transition flex items-center gap-1";
+                } else {
+                    btn.className = "px-3 py-1 rounded-full font-medium text-inklight hover:text-ink transition flex items-center gap-1";
+                }
+            });
+            renderizarCartas();
+        }
+
+        // Abrir modal de una carta específica
+        function abrirModalCarta(id) {
+            const todas = obtenerTodasLasCartas();
+            const carta = todas.find(c => c.id === id);
+            if (!carta || carta.bloqueada) return;
+
+            cartaAbiertaId = id;
+
+            // Marcar como leída
+            if (!cartasLeidas.includes(id)) {
+                cartasLeidas.push(id);
+                localStorage.setItem('buzon_leidas', JSON.stringify(cartasLeidas));
+                renderizarCartas();
+            }
+
+            // Rellenar datos del modal
+            document.getElementById('modal-tag').textContent = carta.etiqueta;
+            document.getElementById('modal-date').textContent = carta.fecha;
+            document.getElementById('modal-title').textContent = carta.titulo;
+            document.getElementById('modal-signature').textContent = carta.firma || CONFIG.firmaPorDefecto;
+
+            // Párrafos
+            const bodyEl = document.getElementById('modal-body');
+            bodyEl.innerHTML = '';
+            const parrafos = Array.isArray(carta.contenido) ? carta.contenido : carta.contenido.split('\n').filter(Boolean);
+            parrafos.forEach(p => {
+                const pEl = document.createElement('p');
+                pEl.textContent = p;
+                bodyEl.appendChild(pEl);
+            });
+
+            // Postdata
+            const psContainer = document.getElementById('modal-ps-container');
+            const psText = document.getElementById('modal-ps');
+            if (carta.postdata && carta.postdata.trim() !== '') {
+                psText.textContent = carta.postdata;
+                psContainer.classList.remove('hidden');
+            } else {
+                psContainer.classList.add('hidden');
+            }
+
+            actualizarIconoFavoritaModal();
+
+            // Configurar botones de anterior / siguiente entre cartas desbloqueadas
+            const desbloqueadas = todas.filter(c => !c.bloqueada);
+            const currentIndex = desbloqueadas.findIndex(c => c.id === id);
+            document.getElementById('btn-prev-letter').disabled = currentIndex <= 0;
+            document.getElementById('btn-next-letter').disabled = currentIndex >= desbloqueadas.length - 1;
+
+            // Mostrar modal con animación
+            const modal = document.getElementById('letter-modal');
+            const box = document.getElementById('letter-modal-box');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+                box.classList.add('scale-100');
+            }, 20);
+        }
+
+        function cerrarModalCarta() {
+            const modal = document.getElementById('letter-modal');
+            const box = document.getElementById('letter-modal-box');
+            modal.classList.add('opacity-0');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 280);
+        }
+
+        // Navegar a la carta anterior o siguiente desde el modal
+        function navegarCarta(direccion) {
+            const desbloqueadas = obtenerTodasLasCartas().filter(c => !c.bloqueada);
+            const currentIndex = desbloqueadas.findIndex(c => c.id === cartaAbiertaId);
+            const target = desbloqueadas[currentIndex + direccion];
+            if (target) {
+                abrirModalCarta(target.id);
+            }
+        }
+
+        // Abrir una carta aleatoria disponible
+        function abrirCartaAleatoria() {
+            const desbloqueadas = obtenerTodasLasCartas().filter(c => !c.bloqueada);
+            if (desbloqueadas.length === 0) return;
+            const random = desbloqueadas[Math.floor(Math.random() * desbloqueadas.length)];
+            abrirModalCarta(random.id);
+        }
+
+        // Marcar / desmarcar carta actual como favorita
+        function toggleFavoritaActual() {
+            if (!cartaAbiertaId) return;
+            if (cartasFavoritas.includes(cartaAbiertaId)) {
+                cartasFavoritas = cartasFavoritas.filter(id => id !== cartaAbiertaId);
+                mostrarToast("Quitada de favoritas");
+            } else {
+                cartasFavoritas.push(cartaAbiertaId);
+                mostrarToast("Guardada en tus cartas favoritas ♥");
+            }
+            localStorage.setItem('buzon_favoritas', JSON.stringify(cartasFavoritas));
+            actualizarIconoFavoritaModal();
+            renderizarCartas();
+        }
+
+        function actualizarIconoFavoritaModal() {
+            const icon = document.getElementById('modal-fav-icon');
+            const esFav = cartasFavoritas.includes(cartaAbiertaId);
+            if (esFav) {
+                icon.setAttribute('fill', '#D46A73');
+                icon.classList.add('text-rosewarm');
+            } else {
+                icon.setAttribute('fill', 'none');
+                icon.classList.remove('text-rosewarm');
+            }
+        }
+
+        /* ===================================================================
+           MODO CREADOR (Para redactar y generar código de nuevas cartas)
+        =================================================================== */
+        function abrirModalCreador() {
+            const modal = document.getElementById('creator-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function cerrarModalCreador() {
+            const modal = document.getElementById('creator-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function construirObjetoNuevaCarta() {
+            const totalActual = obtenerTodasLasCartas().length + 1;
+            const titulo = document.getElementById('new-title').value.trim() || `Carta #${totalActual}`;
+            const etiqueta = document.getElementById('new-tag').value.trim() || `Carta #${totalActual}`;
+            const fecha = document.getElementById('new-date').value.trim() || "Nuevo recuerdo";
+            const firma = document.getElementById('new-signature').value.trim() || CONFIG.firmaPorDefecto;
+            const postdata = document.getElementById('new-ps').value.trim();
+            const bloqueada = document.getElementById('new-locked').checked;
+            const parrafos = document.getElementById('new-content').value
+                .split('\n')
+                .map(p => p.trim())
+                .filter(Boolean);
+
+            return {
+                id: `carta-${Date.now()}`,
+                etiqueta,
+                titulo,
+                fecha,
+                bloqueada,
+                contenido: parrafos.length ? parrafos : ["Texto de tu carta..."],
+                postdata,
+                firma
+            };
+        }
+
+        function guardarNuevaCarta(e) {
+            e.preventDefault();
+            const nueva = construirObjetoNuevaCarta();
+            cartasExtraLocal.push(nueva);
+            localStorage.setItem('buzon_extra_cartas', JSON.stringify(cartasExtraLocal));
+            renderizarCartas();
+            generarCodigoParaCopiar();
+            mostrarToast("¡Carta agregada al buzón! También puedes copiar su código abajo ✨");
+        }
+
+        // Mostrar notificación suave
+        let toastTimeout;
+        function mostrarToast(texto) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-text').textContent = texto;
+            toast.classList.remove('hidden');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3200);
+        }
+
+        /* ===================================================================
+           ANIMACIÓN DE PARTÍCULAS ROMÁNTICAS EN EL FONDO (CANVAS)
+        =================================================================== */
+        function iniciarParticulas() {
+            const canvas = document.getElementById('particles-canvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            let particles = [];
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            const cantidad = 26;
+            for (let i = 0; i < cantidad; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 4 + 2,
+                    speedY: -(Math.random() * 0.35 + 0.12),
+                    speedX: (Math.random() - 0.5) * 0.25,
+                    opacity: Math.random() * 0.35 + 0.1,
+                    isHeart: i % 4 === 0
+                });
+            }
+
+            function drawHeart(x, y, size, opacity) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.fillStyle = `rgba(212, 106, 115, ${opacity})`;
+                ctx.beginPath();
+                ctx.moveTo(0, size / 4);
+                ctx.bezierCurveTo(0, 0, -size / 2, 0, -size / 2, size / 4);
+                ctx.bezierCurveTo(-size / 2, size / 2, 0, size * 0.75, 0, size);
+                ctx.bezierCurveTo(0, size * 0.75, size / 2, size / 2, size / 2, size / 4);
+                ctx.bezierCurveTo(size / 2, 0, 0, 0, 0, size / 4);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                particles.forEach(p => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+
+                    if (p.y < -20) {
+                        p.y = height + 10;
+                        p.x = Math.random() * width;
+                    }
+
+                    if (p.isHeart) {
+                        drawHeart(p.x, p.y, p.size * 2.2, p.opacity);
+                    } else {
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(200, 157, 84, ${p.opacity})`;
+                        ctx.fill();
+                    }
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+    </script>
+</body>
+</html>
